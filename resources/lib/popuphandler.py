@@ -177,27 +177,32 @@ class UpNextPopupHandler(object):
             else:
                 keep_playing = True
 
-        # Fallback plugin playback method, or if plugin provides play_info
         elif source.startswith('plugin'):
-            plugin_data = self.state.data
+            import xbmc
+            import xbmcgui
 
-            # Try playing via TMDB Helper Player class first
-            play_data = plugin_data.get('play_data')
-            if play_data:
-                try:
-                    from tmdb_helper import Players
-                    self.log("Using Players.play() to play next video")
-                    Players(**play_data).play()
-                    return keep_playing
-                except Exception as e:
-                    self.log(f"Players.play() failed: {e}", utils.LOGWARNING)
+            xbmc.executebuiltin('ActivateWindow(1143)')
+            try:
+                win = xbmcgui.Window(1143)
+                for ctrl_id in (6003, 8200):
+                    try:
+                        win.getControl(ctrl_id).setVisible(False)
+                    except Exception:
+                        pass
+            except Exception:
+                pass
 
-            # Fallback: use play_plugin_item with path from next_video
-            next_video = plugin_data.get('next_video', {})
-            if not plugin_data.get('play_url') and next_video.get('path'):
-                plugin_data['play_url'] = next_video['path']
-            self.log(f"Fallback: Using play_plugin_item()")
-            api.play_plugin_item(plugin_data, self.state.encoding, resume)
+            for _ in range(10):
+                if xbmc.getCondVisibility('Integer.IsGreater(Container(450).NumItems,0)'):
+                    break
+                xbmc.sleep(50)
+
+            xbmc.executebuiltin('Control.SetFocus(450,0)')
+            xbmc.sleep(50)
+            xbmc.executebuiltin('Action(Select)')
+            xbmc.sleep(50)
+            xbmc.executebuiltin('Dialog.Close(1143,true)')
+            return keep_playing
 
         # Fallback library playback method, not normally used
         else:
@@ -208,7 +213,7 @@ class UpNextPopupHandler(object):
             popup_state, source, ' using queue' if queued else ''
         ))
         return keep_playing
-
+        
     def _remove_popup(self):
         with utils.ContextManager(self, 'popup') as (popup, error):
             if error is AttributeError:
