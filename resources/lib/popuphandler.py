@@ -192,8 +192,14 @@ class UpNextPopupHandler(object):
             except Exception:
                 pass
 
-            for _ in range(10):
-                if xbmc.getCondVisibility('Integer.IsGreater(Container(450).NumItems,0)'):
+            # 1. Kurz warten, bis Kodi den Refresh von Container(450) anstösst
+            xbmc.sleep(150)
+
+            # 2. Warten, bis das Neuladen abgeschlossen ist und mindestens 1 Item vorliegt (max. 1.5 Sek.)
+            for _ in range(30):
+                is_updating = xbmc.getCondVisibility('Container(450).IsUpdating')
+                has_items = xbmc.getCondVisibility('Integer.IsGreater(Container(450).NumItems,0)')
+                if not is_updating and has_items:
                     break
                 xbmc.sleep(50)
 
